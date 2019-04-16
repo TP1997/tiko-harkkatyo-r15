@@ -21,7 +21,7 @@ public final class typeCaster{
 			return null;
 		}
 	}
-	//Muutos String-tyypist‰ Date-tyypiksi
+	//Muutos String-tyypist√§ Date-tyypiksi
 	public static Date toDate(String s) {
 		try {
 			Date date=new SimpleDateFormat("yyyy-dd-MM").parse(s);
@@ -31,7 +31,7 @@ public final class typeCaster{
 			return null;
 		}
 	}
-	//Muutos Date-tyypist‰ java.sql.Date-tyypiksi
+	//Muutos Date-tyypist√§ java.sql.Date-tyypiksi
 	public static java.sql.Date toSqlDate(Date d){
 		try {
 			java.sql.Date date=new java.sql.Date(d.getTime());
