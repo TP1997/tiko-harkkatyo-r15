@@ -115,6 +115,23 @@ public class ht2019{
 		
 		
 	}
+	public static Integer luoUusiSuorite(Connection con, Integer tyokohdeID, boolean tyyppi) {
+		try {
+			Integer suoriteID=uusiID(con, "suorite", "suoriteid");
+			
+			PreparedStatement pst=con.prepareStatement("INSERT INTO suorite VALUES(?,?,?)");
+			pst.setInt(1, suoriteID);
+			pst.setInt(2, tyokohdeID);
+			pst.setBoolean(3, tyyppi);
+			pst.executeUpdate();
+			
+			return suoriteID;
+		}
+		catch(SQLException exc) {
+			System.out.println("tapahtui virhe: "+exc.getMessage());
+			return null;
+		}
+	}
 	//Metodi tuntiyöiden lisäämiseksi työkohteelle.
 	public static void lisaaTuntityosuorite(Connection con) {
 		Integer tkID=valitseTyokohde(con);				
@@ -173,6 +190,22 @@ public class ht2019{
 		}
 		else
 			System.out.println("Virheelliset tiedot.");
+	}
+	public static void luoUrakkasopimus(Connection con) {
+		Integer tkid=valitseTyokohde(con);
+		if(tkid!=null) {
+			try {
+				Integer suoriteid=uusiID(con, "suorite", "suoriteid");
+				PreparedStatement pst=con.prepareStatement("INSERT INTO suorite VALUES(?,?,?)");
+				pst.setInt(1, suoriteid);
+				pst.setInt(2, tkid);
+				pst.setBoolean(3, false);
+				pst.executeUpdate();
+			}
+			catch(SQLException exc) {
+				System.out.println("tapahtui virhe: "+exc.getMessage());
+			}
+		}
 	}
 
 	public static void lisaaTarvikeSuoritteeseen(Connection con, int suoriteid) {
@@ -272,6 +305,20 @@ public class ht2019{
 		}
 		else
 			System.out.println("Virheelliset tiedot.");
+		
+	}
+	/******************************************************************************************/
+	
+	public static void luoUrakkasopimus2(Connection con) {/*
+		Integer tyokohdeID=valitseTyokohde(con);
+		Integer suoriteID=luoUusiSuorite(con, tyokohdeID, false);
+		if(suoriteID!=null) {
+			ArrayList<Integer> tunnit=new ArrayList<Integer>();
+			System.out.println("Valitse urakkaan kuuluvat ty�t");
+		}*/
+		ArrayList<Integer> tunnit=new ArrayList<Integer>();
+		System.out.println("Valitse urakkaan kuuluvat ty�t");
+		
 		
 	}
 	public static void suljeYhteys(Connection con) {

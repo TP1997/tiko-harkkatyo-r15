@@ -15,7 +15,9 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
---Funktio 2 (KESKENERÄINEN). Funktio on luotu jo tietokantaan.
+
+
+--Funktio 2
 CREATE OR REPLACE FUNCTION tarvikelisäys(tid integer, sid integer, määrä_ integer)
 RETURNS void AS $$
 BEGIN
