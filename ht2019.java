@@ -707,6 +707,10 @@ public class ht2019{
 
 	public static void main(String args[]) {
 		Connection con = avaaYhteys();
+		// Luodaan käyttöliittymäolio
+		UI kayttoliittyma = new UI(con);
+		// Kutsutaan käyttöliittymän ajometodia
+		kayttoliittyma.aja();
 		//Connection con2=avaaYhteys();
 		//lisaaTyokohde(con);
 		//lisaaTuntityosuorite(con);
