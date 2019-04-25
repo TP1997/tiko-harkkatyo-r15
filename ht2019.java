@@ -420,7 +420,7 @@ public class ht2019{
 		//Asetetaan lähetyspäiväksi nyk. päivämärä
 		Date lahetyspvm = new Date();
 		//Valitaan eräpäivä
-		System.out.println("Anna eräpäivä yyyy-dd-mm):");
+		System.out.println("Anna eräpäivä yyyy-mm-dd):");
 		Date erapvm=inputManager.readDate();
 		Integer laskuid=uusiID(con, "lasku", "laskuid");
 		//Muutetaan päivämäärät sql.date-tyyppiseksi
@@ -673,7 +673,8 @@ public class ht2019{
 	 * @param edeltavaLasku laskua edeltävän laskun id
 	 * @param moneskoLasku ilmaisee monesko lasku on kyseessä: 1=ensimmäistä kertaa lähetettävä, 2=muistutuslasku...
 	*/
-    public static void muodostaTuntityolasku(Connection con, int kohdeid, Integer edeltavaLasku, int moneskoLasku) {
+    public static void muodostaTuntityolasku(Connection con, int kohdeid, Integer edeltavaLasku, int moneskoLasku)
+	{
         try {
             int asiakasid = -1;
             String asiakasNimi = "";
@@ -777,7 +778,7 @@ public class ht2019{
 				try{
 					luoLasku(con, edeltavaLasku, suoriteid, moneskoLasku);
 				} catch (Exception e){
-					System.out.println("Lasku oli jo ilmeisesti kannassa: "+e);
+					System.out.println("Lasku oli jo kannassa.");
 				}
 				
 				//Haetaan lasku -taulusta tarvittavat tiedot laskuun.
@@ -796,7 +797,10 @@ public class ht2019{
 				try {
 					BufferedWriter writer = new BufferedWriter(new FileWriter("Lasku"+Integer.toString(laskuid)+".txt"));
 					
+					// Jos kyseessä muistutuslasku
 					if(moneskoLasku == 2)writer.write("MUISTUTUSLASKU\nEdellisen laskun viite: "+Integer.toString(edeltavaLasku)+"\n");
+					// Jos kyseessä karhulasku
+					else if(moneskoLasku > 2)writer.write("KARHULASKU\nEdellisen laskun viite: "+Integer.toString(edeltavaLasku)+"\n");
 					else writer.write("LASKU\n");
 					writer.write("\nLaskuviite: " + Integer.toString(laskuid));
 					writer.write("\n\nLÄHETTÄJÄ\nTmi Sähkötärsky\n\n");
@@ -824,7 +828,28 @@ public class ht2019{
 						laskutusLisa = (moneskoLasku - 1) * 5.00;
 						writer.write("\nLaskutuslisä: 5.00€");
 					}
-					writer.write("\n\nMaksettavaa yhteensä: " + Double.toString(tarvikkeidenSumma + kvkelpoinenSumma + laskutusLisa) + "€");
+					double viivastyskorko = 1;
+					if(moneskoLasku > 2)
+					{
+						// Selvitetään ero nykyisen päivän ja eräpäivän välillä,
+						// jaetaan vuosikorkoprosentti 365 ja kerrotaan se erolla
+						PreparedStatement datediffPst = con.prepareStatement("SELECT DATE_PART('day', ?, ?) AS ero");
+						long time = System.currentTimeMillis();
+						java.sql.Date nyt = new java.sql.Date(time);
+						datediffPst.setDate(1, nyt);
+						datediffPst.setDate(2, typeCaster.toSqlDate(typeCaster.toDate(erapvm)));
+						ResultSet dateResult = datediffPst.executeQuery();
+						int ero = 0;
+						while(dateResult.next())
+						{
+							ero = dateResult.getInt("ero");
+						}
+						datediffPst.close();
+						dateResult.close();
+						viivastyskorko = 1 + (0.16/365) * ero;
+						
+					}
+					writer.write("\n\nMaksettavaa yhteensä: " + Double.toString((tarvikkeidenSumma + kvkelpoinenSumma) *viivastyskorko + laskutusLisa) + "€");
 					writer.write("\n\nEräpäivä: "+erapvm);
 					writer.write("\n\nTilinumero: " + tilinumero);
 					writer.close();
@@ -926,6 +951,73 @@ public class ht2019{
 		}catch (Exception e){
 			System.out.println("Tapahtui virhe: " + e);
 		}
+	}
+	
+	/* (Toiminto 3 ja 4) Funktio hakee lasku-taulusta kaikki laskut, joiden eräpäivä on mennyt,
+	ja joita ei ole maksettu, tai joista ei ole lähetetty seuraavaa laskua */
+	public static ArrayList<int[]> haeEraantyneetLaskut(Connection con)
+	{
+		try{
+			// Verrataan lasku-taulun rivejen eräpäivämääriä nykyiseen
+			// päivään, jotta saadaan vanhentuneet laskut
+			// ja niiden lukumäärä.
+			int lkm = 0;
+			PreparedStatement lkmPst = con.prepareStatement("SELECT COUNT(*) AS lkm FROM lasku WHERE eräpvm < now() AND maksettu = False");
+			ResultSet lkmRs = lkmPst.executeQuery();
+			lkmRs.next();
+			lkm = lkmRs.getInt("lkm");
+			lkmPst.close();
+			lkmRs.close();
+			if(lkm > 0)
+			{
+				ArrayList<int[]> tiedot = new ArrayList<int[]>();
+				PreparedStatement pst = con.prepareStatement("SELECT suoriteid AS id, laskuid AS el, moneskolasku AS ml FROM lasku WHERE eräpvm < now() AND maksettu = False");
+				ResultSet eraantyneetRs = pst.executeQuery();
+				while(eraantyneetRs.next())
+				{
+					int edeltava = -1;
+					tiedot.add(new int[]{eraantyneetRs.getInt("id"), eraantyneetRs.getInt("el"), eraantyneetRs.getInt("ml")});
+				}
+				pst.close();
+				eraantyneetRs.close();
+				return tiedot;
+			}
+			// Palautetaan null-arvo, jos erääntyneitä laskuja ei löytynyt
+			else
+				return null;
+			
+		}
+		catch(SQLException e)
+		{
+			System.out.println("Tapahtui virhe: " + e);
+		}
+		return null;
+	}
+	
+	/* (Toiminto 3 ja 4)
+	Metodi, joka kutsuu tuntityölaskun muodostusmetodia jos
+	erääntynyttä laskua ei ole vielä luotu, sekä palauttaa siinä tapauksessa totuusarvon true.*/
+	public static boolean luoEraantynytlasku(Connection con, int id, int el, int ml)
+	{
+		try{
+			PreparedStatement pst = con.prepareStatement("SELECT COUNT(*) AS lkm FROM lasku WHERE edeltävälasku = ?");
+			pst.setInt(1, el);
+			ResultSet tarkistusRs = pst.executeQuery();
+			while(tarkistusRs.next())
+			{
+				// Verrataan edeltävää laskua
+				if(tarkistusRs.getInt("lkm") == 0)
+				{
+					muodostaTuntityolasku(con, id, el, ml);
+					return true;
+				}	
+			}
+		}
+		catch(SQLException e)
+		{
+			System.out.println("Tapahtui virhe: " + e);
+		}
+		return false;
 	}
 
 	public static void main(String args[]) {

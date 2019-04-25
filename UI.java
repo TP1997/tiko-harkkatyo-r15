@@ -1,5 +1,6 @@
 /* Luokka syötteen lukemiseen ja tulosteen tulostamiseen*/
 
+import java.util.*;
 import java.io.*;
 import java.sql.*;
 
@@ -24,7 +25,7 @@ public class UI
 	{
 		while(kaynnissa)
 		{
-			System.out.print("Syötä komento:");
+			System.out.print("\nSyötä komento:");
 			try
 			{
 				lueSyote();
@@ -56,12 +57,17 @@ public class UI
 	toiminto suoritetaan */
 	private void kasitteleSyote(String s) throws IllegalArgumentException
 	{
+		String kysely = "";
+		int tunnus = 0;
 		switch(s)
 		{
+			case "päivitä hinnasto":
+				ht2019.paivitaTarvikeHinnasto(con, "hinnasto.txt");
+				break;
 			case "kysely":
 				System.out.println("Syötä SQL-kysely:");
 				System.out.print("psql=>");
-				String kysely = inputManager.readString();
+				kysely = inputManager.readString();
 				ht2019.tulostaKysely(con, kysely + "\n");
 				break;
 			case "lisää työkohde":
@@ -74,29 +80,49 @@ public class UI
 				ht2019.lisaaUrakkasopimusTietokantaan(con);
 				break;
 			case "lisää tarvike":
-				ht2019.lisaaTarvikeKohteeseen(con);//kts. metodi
+				ht2019.lisaaTarvikeKohteeseen(con);
 				break;
-			case "lisää suorite":
+			case "lisää tuntityösuorite":
 				ht2019.lisaaTuntityosuorite(con);
 				break;
-			case "luo lasku":
-				ht2019.muodostaTuntityolasku(con);//kts metodi
+			case "muodosta tuntityölasku":
+				ht2019.muodostaTuntityolasku(con);
+				break;
+			case "luo hinta-arvio":
+				System.out.println("\nValitse työkohde:");
+				ht2019.tulostaKysely(con, "select*from työkohde");
+				tunnus = typeCaster.toInt(ht2019.valitse(con, "työkohde", "kohdeid", false));
+				ht2019.muodostaHintaArvio(con, tunnus);
+				break;
+			case "help":
+				tulostaOhjeet();
 				break;
 			case "luo muistutuslaskut":
-				// KESKEN
-				System.out.println("Puuttuu");
+				System.out.println("Haetaan erääntyneet laskut...");
+				ArrayList<int[]> eraantyneidenTunnukset = ht2019.haeEraantyneetLaskut(con);
+				if(eraantyneidenTunnukset == null)
+				{
+					System.out.println("Erääntyneitä laskuja ei löytynyt.");
+				}
+				else
+				{
+					int lkm = 0;
+					for(int i = 0;i < eraantyneidenTunnukset.size();i++)
+					{
+						int[] lista = eraantyneidenTunnukset.get(i);
+						if(ht2019.luoEraantynytlasku(con, lista[0], lista[1], lista[2]))
+							lkm++;
+					}
+					if(lkm == 0)
+						System.out.println("Erääntyneitä laskuja ei löytynyt");
+					else
+						System.out.println("Löydettiin " + eraantyneidenTunnukset.size() + " erääntynyttä laskua, muistutus- tai karhulaskut luotu");
+					 
+				}
 				break;
 			case "lopeta":
 				System.out.println("Suljetaan ohjelma.");
 				kaynnissa = false;
-				break;
-			case "päivitä hinnasto":
-				System.out.print("Anna hinnaston sisältävä tiedosto: ");
-				String tiedosto=inputManager.readString();
-				ht2019.paivitaTarvikeHinnasto(con, tiedosto);
-				break;
-			case "help":
-				tulostaOhjeet();
 				break;
 			default:
 				// Jos komentoa ei tunnisteta, heitetään virheilmoitus
@@ -107,6 +133,6 @@ public class UI
 	/* Metodi, joka tulostaa jokaisen sen tunnistaman komennon */
 	private void tulostaOhjeet()
 	{
-		System.out.println("lisää työkohde\nlisää asiakas\nlisää urakkasopimus\nlisää tarvike\nlisää tuntityösuorite\nluo lasku\nluo muistutuslaskut\nkysely\nlopeta");
+		System.out.println("päivitä hinnasto\nlisää työkohde\nlisää asiakas\nlisää urakkasopimus\nlisää tarvike\nlisää tuntityösuorite\nluo hinta-arvio\nmuodosta tuntityölasku\nluo muistutuslaskut\nlopeta");
 	}
 }
