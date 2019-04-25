@@ -420,7 +420,7 @@ public class ht2019{
 		//Asetetaan lähetyspäiväksi nyk. päivämärä
 		Date lahetyspvm = new Date();
 		//Valitaan eräpäivä
-		System.out.println("Anna eräpäivä yyyy-mm-dd):");
+		System.out.println("Anna eräpäivä yyyy-dd-mm:");
 		Date erapvm=inputManager.readDate();
 		Integer laskuid=uusiID(con, "lasku", "laskuid");
 		//Muutetaan päivämäärät sql.date-tyyppiseksi
