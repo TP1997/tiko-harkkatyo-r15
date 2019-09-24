@@ -7,9 +7,9 @@ public class databaseManager{
 	private final String PROTOKOLLA = "jdbc:postgresql:";
 	private final String PALVELIN = "dbstud2.sis.uta.fi";
 	private final int PORTTI = 5432;
-	private final String TIETOKANTA = "tiko2019r15"; 
-	private final String KAYTTAJA = "tp427552";
-	private final String SALASANA = "tuomas";
+	private final String TIETOKANTA = ""; 
+	private final String KAYTTAJA = "";
+	private final String SALASANA = "";
 	Connection con;
 	
 	public databaseManager() {
